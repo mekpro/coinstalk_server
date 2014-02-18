@@ -1,6 +1,7 @@
 import eventlet
 import logging
 import json
+from datetime import datetime
 from pymongo import MongoClient
 from eventlet.green import urllib2
 
@@ -16,13 +17,14 @@ def record(parser, content):
   result = dict()
   if parser == 'mtgox':
     result['trader'] = 'mtgox'
-    result['timestamp'] = int(d['data']['now'])
+    print int(d['data']['now'])
+    result['timestamp'] = datetime.fromtimestamp(int(d['data']['now']) / 1e6)
     last_s = d['data']['last_local']['display'].split('$')[1]
     result['last'] = float(last_s)
     conn.value.insert(result)
   elif parser == 'bitstamp':
     result['trader'] = 'bitstamp'
-    result['timestamp'] = int(d['timestamp'])
+    result['timestamp'] = datetime.fromtimestamp(int(d['timestamp']))
     result['last'] = float(d['last'])
     result['high'] = float(d['high'])
     result['bid'] = float(d['bid'])
@@ -33,7 +35,7 @@ def record(parser, content):
   elif parser == 'btc-e':
     result['trader'] = 'btc-e'
     d = d['ticker']
-    result['timestamp'] = int(d['updated'])
+    result['timestamp'] = datetime.fromtimestamp(int(d['updated']))
     result['last'] = float(d['last'])
     result['high'] = float(d['high'])
     result['volume'] = float(d['vol_cur'])
@@ -41,7 +43,7 @@ def record(parser, content):
     conn.value.insert(result)
   elif parser == 'bitfinex':
     result['trader'] = 'bitfinex'
-    result['timestamp'] = round(float(d['timestamp']))
+    result['timestamp'] = datetime.fromtimestamp(round(float(d['timestamp'])))
     result['last'] = float(d['last_price'])
     result['mid'] = float(d['mid'])
     result['ask'] = float(d['ask'])
