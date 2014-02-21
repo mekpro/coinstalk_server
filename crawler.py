@@ -51,6 +51,7 @@ def record(parser, content):
     pass
   else:
     logging.error('invalid parser: '+ parser)
+    return 0
 
 if __name__ == '__main__':
   pool = eventlet.GreenPool()
