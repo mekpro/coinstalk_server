@@ -1,22 +1,38 @@
 import bottle
 import json
 import datetime
+import time
 import logging
-from bottle import get, post, route, run, request, template
+from bottle import get, post, route, run, hook, response, request, template
 from pymongo import MongoClient
 
 import config
 
 def sampling(rows, count, rate):
+  result = {}
   values = []
+  high = 0.0
+  low = 9999999.0
   step_size = count / rate
   c = 0
-  for row in rows:
+  for i,row in enumerate(rows):
+    if i == 0:
+      result['first'] = row['last']
     if c <= 0:
       c += step_size
       values.append(row['last'])
     c -= 1
-  return values
+    result['last'] = row['last']
+    result['timestamp'] = time.mktime(row['timestamp'].timetuple())
+    if result['last'] > high:
+      high = result['last']
+    if result['last'] < low:
+      low = result['last']
+  result['high'] = high
+  result['low'] = low
+  result['values'] = values
+  result['change'] = (result['last'] - result['first'])*100 / result['last']
+  return result 
 
 def query_values(trader, time_range_str, time_end):
   values = []
@@ -35,6 +51,10 @@ def query_values(trader, time_range_str, time_end):
   logging.error("count: " +str(count))
   values = sampling(rows, count, sampling_rate)
   return values
+
+@hook('after_request')
+def enable_cors():
+    response.headers['Access-Control-Allow-Origin'] = '*'
 
 @get('/')
 def view_root():
